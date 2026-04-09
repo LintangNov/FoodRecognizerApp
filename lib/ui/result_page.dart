@@ -29,54 +29,141 @@ class _ResultBody extends StatefulWidget {
 }
 
 class _ResultBodyState extends State<_ResultBody> {
-  
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_){
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final imagePath = context.read<HomeController>().imagePath;
-      if(imagePath != null){
+      if (imagePath != null) {
         context.read<ResultController>().analyzeImage(imagePath);
       }
+    });
+  }
 
-    });
-    Future.microtask(() {
-    });
+  List<Widget> _buildIngredients(Map<String, dynamic> recipe) {
+    List<Widget> ingredients = [];
+    for (var i = 0; i < 20; i++) {
+      final ingredient = recipe['strIngredient$i'];
+      final measure = recipe['strMeasure$i'];
+      if (ingredient != null && ingredient.toString().trim().isNotEmpty) {
+        ingredients.add(Text("- $ingredient: $measure"));
+      }
+    }
+    return ingredients;
   }
 
   @override
   Widget build(BuildContext context) {
     final imagePath = context.read<HomeController>().imagePath;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      spacing: 8,
-      children: [
-        Expanded(
-          child: Center(
-            child: imagePath != null
-                ? Image.file(File(imagePath), fit: BoxFit.cover,)
-                : const Icon(Icons.broken_image, size: 100),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16.0),
-          
-          child: Consumer<ResultController>(
-            builder: (context, provider, child){
-              if (provider.isAnalyzing){
-                return const ClassificatioinItemShimmer();
-              }
+    return Consumer<ResultController>(
+      builder: (context, provider, child){
+        if(provider.isAnalyzing){
+          return const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 15,),
+                Text("Menganalisis gambar..."),
+              ],
+            ),
+          );
+        }
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: imagePath != null
+                    ? Image.file(File(imagePath), height: 250, fit: BoxFit.cover,)
+                    : const Icon(Icons.broken_image, size: 100,),
+              ),
+              SizedBox(height: 16,),
 
-              return ClassificatioinItem(
+              ClassificatioinItem(
                 item: provider.detectedLabel,
                 value: provider.confidenceScore,
-              );
-            },
-          )
-        ),
-      ],
+              ),
+              const Divider(height: 32, thickness: 2,),
+
+              if(provider.recipeData != null) ...[
+                Text("Resep dari MealDB", style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),)
+                ,SizedBox(height: 8,),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(provider.recipeData!['strMealThumb'], height: 150, fit: BoxFit.cover,),
+                ),
+                const SizedBox(height: 16,),
+                const Text("Bahan-bahan:", style: TextStyle(fontWeight: FontWeight.bold)),
+                ..._buildIngredients(provider.recipeData!),
+                const SizedBox(height: 16),
+                const Text("Instruksi:", style: TextStyle(fontWeight: FontWeight.bold)),
+                Text(provider.recipeData!['strInstructions'] ?? "Tidak ada instruksi."),
+                const Divider(height: 32, thickness: 2),
+              ] else ...[
+                const Text("Resep tidak ditemukan di MealDB database.", style: TextStyle(fontStyle: FontStyle.italic)),
+                const Divider(height: 32, thickness: 2),
+              ],
+
+              if(provider.nutritionData != null) ...[
+                Text("Informasi Nutrisi (Gemini AI)", style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsetsGeometry.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("Kalori: ${provider.nutritionData!['kalori']}"),
+                        Text("Karbohidrat: ${provider.nutritionData!['karbohidrat']}"),
+                        Text("Lemak: ${provider.nutritionData!['lemak']}"),
+                        Text("Protein: ${provider.nutritionData!['protein']}"),
+                        Text("Serat: ${provider.nutritionData!['serat']}"),
+                      ],
+                    ),
+                  ),
+                )
+              ] else ...[
+                const Text("Nutrisi gagal dimuat.", style: TextStyle(fontStyle: FontStyle.italic)),
+              ]
+            ],
+          ),
+        );
+      },
     );
+    // Column(
+    //   crossAxisAlignment: CrossAxisAlignment.stretch,
+    //   spacing: 8,
+    //   children: [
+    //     Expanded(
+    //       child: Center(
+    //         child:
+    //             imagePath != null
+    //                 ? Image.file(File(imagePath), fit: BoxFit.cover)
+    //                 : const Icon(Icons.broken_image, size: 100),
+    //       ),
+    //     ),
+    //     Padding(
+    //       padding: const EdgeInsets.symmetric(vertical: 16.0),
+
+    //       child: Consumer<ResultController>(
+    //         builder: (context, provider, child) {
+    //           if (provider.isAnalyzing) {
+    //             return const ClassificatioinItemShimmer();
+    //           }
+
+    //           return ClassificatioinItem(
+    //             item: provider.detectedLabel,
+    //             value: provider.confidenceScore,
+    //           );
+    //         },
+    //       ),
+    //     ),
+    //   ],
+    // );
   }
 }
