@@ -16,9 +16,19 @@ class ClassificatioinItem extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
-          Text(item, style: Theme.of(context).textTheme.headlineMedium),
-          const Spacer(),
-          Text(value, style: Theme.of(context).textTheme.titleMedium),
+          Expanded(
+            child: Text(
+              item, 
+              style: Theme.of(context).textTheme.headlineSmall,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Text(
+            value, 
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
         ],
       ),
     );

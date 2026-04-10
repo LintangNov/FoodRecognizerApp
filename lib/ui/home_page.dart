@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:submission/controller/home_controller.dart';
+import 'package:submission/ui/camera_page.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -99,6 +100,17 @@ class _HomeBody extends StatelessWidget {
             context.read<HomeController>().goToResultPage(context);
           },
           child: const Text("Analyze"),
+        ),
+
+        const SizedBox(height: 8,),
+
+        OutlinedButton.icon(onPressed: (){
+          Navigator.push(context, 
+          MaterialPageRoute(builder: (context)=> const CameraPage()));
+
+        }, 
+        icon: const Icon(Icons.document_scanner_outlined),
+        label: const Text("Live Scan dengan Kamera"),
         ),
       ],
     );

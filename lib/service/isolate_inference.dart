@@ -2,6 +2,7 @@ import 'dart:isolate';
 
 import 'package:camera/camera.dart';
 import 'package:image/image.dart' as image_lib;
+import 'package:submission/utils/image_utils.dart';
 import 'package:tflite_flutter/tflite_flutter.dart';
 
 class InferenceModel {
@@ -38,6 +39,7 @@ class IsolateInference {
       _receivePort.sendPort,
       debugName: _debugName,
     );
+    _sendPort = await _receivePort.first;
   }
 
   Future<void> close() async {
@@ -49,56 +51,68 @@ class IsolateInference {
     final port = ReceivePort();
     sendPort.send(port.sendPort);
 
+    Interpreter? interpreter;
+
     await for (final InferenceModel isolateModel in port) {
-      image_lib.Image? img;
+      try {
+        image_lib.Image? img;
 
-      if (isolateModel.imagePath != null) {
-        img = await image_lib.decodeImageFile(isolateModel.imagePath!);
-      } else if (isolateModel.cameraImage != null) {
-        // TODO: bikin konversi camera feed
-      }
-
-      if (img == null) {
-        continue;
-      }
-
-      image_lib.Image imageInput = image_lib.copyResize(
-        img,
-        width: isolateModel.inputShape[1],
-        height: isolateModel.inputShape[2],
-      );
-
-      final imageMatrix = List.generate(
-        imageInput.height,
-        (y) => List.generate(imageInput.width, (x) {
-          final pixel = imageInput.getPixel(x, y);
-          return [pixel.r, pixel.g, pixel.b];
-        }),
-      );
-
-      final input = [imageMatrix];
-      final output = [List<double>.filled(isolateModel.outputShape[1],0)];
-
-      Interpreter interpreter = Interpreter.fromAddress(isolateModel.interpreterAddress);
-      interpreter.run(input, output);
-
-      final result = output.first;
-
-      double maxScore = 0;
-      int maxIndex = 0;
-      for (var i = 0; i < result.length; i++) {
-        if (result[i] > maxScore){
-          maxScore = result[i];
-          maxIndex = i;
+        if (isolateModel.imagePath != null) {
+          img = await image_lib.decodeImageFile(isolateModel.imagePath!);
+        } else if (isolateModel.cameraImage != null) {
+          img = ImageUtils.convertCameraImage(isolateModel.cameraImage!);
         }
+
+        if (img == null) {
+          isolateModel.responsePort.send({"error": "Gagal membaca atau memproses gambar."});
+          continue; 
+        }
+
+        image_lib.Image imageInput = image_lib.copyResize(
+          img,
+          width: isolateModel.inputShape[1],
+          height: isolateModel.inputShape[2],
+        );
+
+        final imageMatrix = List.generate(
+          imageInput.height,
+          (y) => List.generate(imageInput.width, (x) {
+            final pixel = imageInput.getPixel(x, y);
+            return [pixel.r.toInt(), pixel.g.toInt(), pixel.b.toInt()];
+          }),
+        );
+
+        final input = [imageMatrix];
+        final output = [List<int>.filled(isolateModel.outputShape[1],0)];
+
+        interpreter ??= Interpreter.fromAddress(isolateModel.interpreterAddress);
+        interpreter.run(input, output);
+
+        final result = output.first;
+
+        double maxScore = 0;
+        int maxIndex = 0;
+        for (var i = 0; i < result.length; i++) {
+          if (result[i] > maxScore){
+            maxScore = result[i].toDouble();
+            maxIndex = i;
+          }
+        }
+
+        maxScore = maxScore / 255.0;
+
+        String detectedLabel = isolateModel.labels[maxIndex];
+
+        isolateModel.responsePort.send({
+          "label": detectedLabel,
+          "score": maxScore
+        });
+
+      } catch (e) {
+        isolateModel.responsePort.send({
+          "error": "Isolate Error: ${e.toString()}"
+        });
       }
-
-      String detectedLabel = isolateModel.labels[maxIndex];
-
-      isolateModel.responsePort.send({
-        "label": detectedLabel,
-        "score": maxScore
-      });
     }
   }
 }

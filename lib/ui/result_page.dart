@@ -71,6 +71,36 @@ class _ResultBodyState extends State<_ResultBody> {
             ),
           );
         }
+
+        if (provider.errorMessage != null) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.red, size: 60),
+                  const SizedBox(height: 16),
+                  Text(
+                    provider.errorMessage!,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 16, color: Colors.red),
+                  ),
+                  const SizedBox(height: 24),
+                  FilledButton.icon(
+                    onPressed: () {
+                      if (imagePath != null) {
+                        context.read<ResultController>().analyzeImage(imagePath);
+                      }
+                    },
+                    icon: const Icon(Icons.refresh),
+                    label: const Text("Coba Lagi"),
+                  )
+                ],
+              ),
+            ),
+          );
+        }
         return SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -95,7 +125,12 @@ class _ResultBodyState extends State<_ResultBody> {
                 ,SizedBox(height: 8,),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  child: Image.network(provider.recipeData!['strMealThumb'], height: 150, fit: BoxFit.cover,),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: provider.recipeData!['strMealThumb'] != null
+                        ? Image.network(provider.recipeData!['strMealThumb'], height: 150, fit: BoxFit.cover,)
+                        : const Icon(Icons.fastfood, size: 100, color: Colors.grey),
+                  ),
                 ),
                 const SizedBox(height: 16,),
                 const Text("Bahan-bahan:", style: TextStyle(fontWeight: FontWeight.bold)),
@@ -135,35 +170,6 @@ class _ResultBodyState extends State<_ResultBody> {
         );
       },
     );
-    // Column(
-    //   crossAxisAlignment: CrossAxisAlignment.stretch,
-    //   spacing: 8,
-    //   children: [
-    //     Expanded(
-    //       child: Center(
-    //         child:
-    //             imagePath != null
-    //                 ? Image.file(File(imagePath), fit: BoxFit.cover)
-    //                 : const Icon(Icons.broken_image, size: 100),
-    //       ),
-    //     ),
-    //     Padding(
-    //       padding: const EdgeInsets.symmetric(vertical: 16.0),
-
-    //       child: Consumer<ResultController>(
-    //         builder: (context, provider, child) {
-    //           if (provider.isAnalyzing) {
-    //             return const ClassificatioinItemShimmer();
-    //           }
-
-    //           return ClassificatioinItem(
-    //             item: provider.detectedLabel,
-    //             value: provider.confidenceScore,
-    //           );
-    //         },
-    //       ),
-    //     ),
-    //   ],
-    // );
+    
   }
 }

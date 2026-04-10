@@ -9,7 +9,7 @@ class GeminiNutritionService {
   GeminiNutritionService(){
     final apiKey = Env.geminiApiKey;
     model = GenerativeModel(
-      model: 'gemini-2.0-flash', 
+      model: 'gemini-1.5-flash', 
       apiKey: apiKey,
       systemInstruction: Content.system(
         'Saya adalah seorang ahli gizi yang mampu mengidentifikasi nutrisi atau kandungan gizi pada makanan layaknya uji laboratorium makanan. Hal yang bisa saya identifikasi adalah kalori, karbohidrat, lemak, serat, dan protein pada makanan. Satuan dari indikator tersebut berupa gram.',
@@ -39,11 +39,20 @@ class GeminiNutritionService {
       final response = await model.generateContent(content);
       final responseText = response.text;
 
-      if (responseText != null){
-        return jsonDecode(responseText);
+      if (responseText != null && responseText.isNotEmpty){
+        final RegExp regex = RegExp(r'\{[\s\S]*\}');
+        final match = regex.firstMatch(responseText);
+
+        if (match != null){
+          final jsonString = match.group(0)!;
+          return jsonDecode(jsonString);
+        } else {
+          print("ERROR: Gagal menemukan format JSON di respons Gemini");
+        }
       }
       return null;
     } catch(e){
+      print("ERROR GEMINI NUTRITION SERVICE: $e");
       return null;
     }
   }
