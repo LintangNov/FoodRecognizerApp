@@ -1,6 +1,6 @@
 # Food Recognizer App
 
-Aplikasi Flutter berbasis Machine Learning yang mampu mengidentifikasi jenis makanan melalui kamera atau galeri, serta menyajikan informasi nutrisi menggunakan integrasi Gemini AI. Proyek ini merupakan bagian dari kurikulum pembelajaran **IDCamp 2026 / Dicoding**.
+Aplikasi Flutter berbasis Machine Learning yang mampu mengidentifikasi jenis makanan melalui kamera atau galeri, serta menyajikan informasi nutrisi menggunakan integrasi Gemini AI. Proyek ini merupakan bagian dari kurikulum pembelajaran **Expert Multi-Platform AI App Development IDCamp 2025 & Dicoding Indonesia**.
 
 ## Fitur Utama
 - **Food Classification**: Klasifikasi jenis makanan lokal menggunakan model TFLite (Food-Classifier).
@@ -43,4 +43,4 @@ dart run build_runner build -d
 ### 3. Jalankan Aplikasi
 ```
 Bash
-flutter run --release
+flutter run
