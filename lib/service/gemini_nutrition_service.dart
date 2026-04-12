@@ -6,13 +6,15 @@ import 'package:submission/env/env.dart';
 class GeminiNutritionService {
   late final GenerativeModel model;
 
+  final Map<String, Map<String, dynamic>> _nutritionCache = {};
+
   GeminiNutritionService(){
     final apiKey = Env.geminiApiKey;
     model = GenerativeModel(
-      model: 'gemini-1.5-flash', 
+      model: 'gemini-2.5-flash', 
       apiKey: apiKey,
       systemInstruction: Content.system(
-        'Saya adalah seorang ahli gizi yang mampu mengidentifikasi nutrisi atau kandungan gizi pada makanan layaknya uji laboratorium makanan. Hal yang bisa saya identifikasi adalah kalori, karbohidrat, lemak, serat, dan protein pada makanan. Satuan dari indikator tersebut berupa gram.',
+        'Kamu adalah Ahli gizi. Berikan estimasi nutrisi: kalori, karbohidrat, lemak, serat, protein. Satuan kkal/gram. Output JSON.',
       ),
       generationConfig: GenerationConfig(
         temperature: 0,
@@ -32,7 +34,13 @@ class GeminiNutritionService {
   }
 
   Future<Map<String, dynamic>?> getNutritionInfo(String foodName)async{
-    final promt = 'Nama makanannya yaitu $foodName';
+    final normalizedFoodName = foodName.toLowerCase().trim();
+    if (_nutritionCache.containsKey(normalizedFoodName)) {
+      print("INFO: Mengambil nutrisi '$normalizedFoodName' dari cache");
+      return _nutritionCache[normalizedFoodName];
+    }
+
+    final promt = 'Nama makanannya $foodName';
     final content = [Content.text(promt)];
 
     try{
@@ -45,7 +53,9 @@ class GeminiNutritionService {
 
         if (match != null){
           final jsonString = match.group(0)!;
-          return jsonDecode(jsonString);
+          final Map<String, dynamic> result = jsonDecode(jsonString);
+          _nutritionCache[normalizedFoodName] = result;
+          return result;
         } else {
           print("ERROR: Gagal menemukan format JSON di respons Gemini");
         }
